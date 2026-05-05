@@ -1,11 +1,13 @@
 """Download Pokemon sprites and metadata from PokeAPI."""
 from __future__ import annotations
 
+import struct
 from pathlib import Path
 from typing import Optional
 
 import pandas as pd
 import requests
+from PIL import Image
 from tqdm import tqdm
 
 
@@ -30,11 +32,33 @@ def fetch_pokemon_data(pokemon_id: int) -> Optional[dict]:
     }
 
 
+def _strip_iccp(path: Path) -> None:
+    # A few PokeAPI PNGs ship with a broken iCCP chunk; rewrite the file
+    # without that chunk so PIL stops refusing to open it.
+    data = path.read_bytes()
+    if data[:8] != b"\x89PNG\r\n\x1a\n":
+        return
+    out = data[:8]
+    i = 8
+    while i < len(data):
+        length = struct.unpack(">I", data[i:i + 4])[0]
+        chunk_type = data[i + 4:i + 8]
+        chunk_total = 4 + 4 + length + 4
+        if chunk_type != b"iCCP":
+            out += data[i:i + chunk_total]
+        i += chunk_total
+    path.write_bytes(out)
+
+
 def download_sprite(url: str, out_path: Path) -> bool:
     response = requests.get(url, timeout=10)
     if response.status_code != 200:
         return False
     out_path.write_bytes(response.content)
+    try:
+        Image.open(out_path).load()
+    except Exception:
+        _strip_iccp(out_path)
     return True
 
 

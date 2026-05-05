@@ -30,11 +30,24 @@ class PokemonDataset(Dataset):
         csv_path: Path,
         images_dir: Path,
         image_size: int = 96,
+        expand_dual_type: bool = True,
     ) -> None:
-        self.df = pd.read_csv(csv_path)
+        df = pd.read_csv(csv_path)
+
+        if expand_dual_type and "type2" in df.columns:
+            rows = []
+            for _, row in df.iterrows():
+                rows.append({"id": row["id"], "name": row["name"], "type": row["type1"]})
+                if pd.notna(row["type2"]):
+                    rows.append({"id": row["id"], "name": row["name"], "type": row["type2"]})
+            self.df = pd.DataFrame(rows).reset_index(drop=True)
+        else:
+            self.df = df.rename(columns={"type1": "type"}).reset_index(drop=True)
+
         self.images_dir = images_dir
         self.transform = transforms.Compose([
             transforms.Lambda(composite_on_white),
+            transforms.RandomHorizontalFlip(p=0.5),
             transforms.Resize((image_size, image_size)),
             transforms.ToTensor(),
             transforms.Normalize(mean=[0.5] * 3, std=[0.5] * 3),
@@ -45,6 +58,6 @@ class PokemonDataset(Dataset):
 
     def __getitem__(self, idx: int) -> tuple[torch.Tensor, int]:
         row = self.df.iloc[idx]
-        img_path = self.images_dir / f"{int(row.id):04d}.png"
+        img_path = self.images_dir / f"{int(row['id']):04d}.png"
         img = Image.open(img_path).convert("RGBA")
-        return self.transform(img), TYPE_TO_ID[row.type1]
+        return self.transform(img), TYPE_TO_ID[row["type"]]

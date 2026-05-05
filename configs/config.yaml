@@ -22,7 +22,7 @@ training:
   batch_size: 32
   lr: 2.0e-4
   ema_decay: 0.999
-  cfg_drop_prob: 0.1
+  cfg_drop_prob: 0.2
   grad_clip: 1.0
   seed: 42
   sample_every_epochs: 25

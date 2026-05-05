@@ -24,10 +24,12 @@ def fetch_pokemon_data(pokemon_id: int) -> Optional[dict]:
     if response.status_code != 200:
         return None
     data = response.json()
+    types = data["types"]
     return {
         "id": pokemon_id,
         "name": data["name"],
-        "type1": data["types"][0]["type"]["name"],
+        "type1": types[0]["type"]["name"],
+        "type2": types[1]["type"]["name"] if len(types) > 1 else None,
         "sprite_url": data["sprites"]["front_default"],
     }
 
@@ -76,6 +78,7 @@ def main():
                 "id": info["id"],
                 "name": info["name"],
                 "type1": info["type1"],
+                "type2": info["type2"],
             })
 
     df = pd.DataFrame(metadata_rows)

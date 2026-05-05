@@ -10,7 +10,7 @@ sys.path.insert(0, str(PROJECT_ROOT))
 
 import torch
 from omegaconf import OmegaConf
-from torch.utils.data import DataLoader
+from torch.utils.data import DataLoader, WeightedRandomSampler
 
 import wandb
 
@@ -46,10 +46,15 @@ def main() -> None:
         images_dir=PROJECT_ROOT / cfg.data.images_dir,
         image_size=cfg.data.image_size,
     )
+
+    type_counts = dataset.df["type"].value_counts().to_dict()
+    weights = [1.0 / type_counts[dataset.df.iloc[i]["type"]] for i in range(len(dataset))]
+    sampler = WeightedRandomSampler(weights, num_samples=len(dataset), replacement=True)
+
     loader = DataLoader(
         dataset=dataset,
         batch_size=cfg.training.batch_size,
-        shuffle=True,
+        sampler=sampler,
         num_workers=2,
         pin_memory=True,
         drop_last=True,

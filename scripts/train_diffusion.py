@@ -1,6 +1,7 @@
 """Train the diffusion model from configs/config.yaml."""
 from __future__ import annotations
 
+import argparse
 import sys
 from pathlib import Path
 
@@ -30,6 +31,11 @@ def get_device() -> torch.device:
 
 
 def main() -> None:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--resume", type=str, default=None,
+                        help="Path to a checkpoint .pt to resume training from")
+    args = parser.parse_args()
+
     cfg = OmegaConf.load(PROJECT_ROOT / "configs" / "config.yaml")
     torch.manual_seed(cfg.training.seed)
     device = get_device()
@@ -71,6 +77,17 @@ def main() -> None:
     ema = EMA(diffusion.model, decay=cfg.training.ema_decay)
     optimizer = torch.optim.AdamW(diffusion.parameters(), lr=cfg.training.lr)
 
+    start_epoch = 0
+    start_global_step = 0
+    if args.resume:
+        ckpt = torch.load(args.resume, map_location=device)
+        diffusion.model.load_state_dict(ckpt["model"])
+        ema.ema_model.load_state_dict(ckpt["ema"])
+        optimizer.load_state_dict(ckpt["optimizer"])
+        start_epoch = ckpt["epoch"] + 1
+        start_global_step = ckpt["global_step"]
+        print(f"Loaded checkpoint from {args.resume} (resuming at epoch {start_epoch})")
+
     wandb.init(
         project="pokemon-genesis",
         config=OmegaConf.to_container(cfg, resolve=True),
@@ -92,6 +109,8 @@ def main() -> None:
         sample_guidance_scale=cfg.sampling.guidance_scale,
         checkpoint_every_epochs=cfg.training.checkpoint_every_epochs,
         checkpoint_dir=PROJECT_ROOT / cfg.paths.checkpoint_dir,
+        start_epoch=start_epoch,
+        start_global_step=start_global_step,
     )
 
     wandb.finish()

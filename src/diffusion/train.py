@@ -84,14 +84,19 @@ def train(
     sample_guidance_scale: float,
     checkpoint_every_epochs: int,
     checkpoint_dir: Path,
+    start_epoch: int = 0,
+    start_global_step: int = 0,
 ) -> None:
     checkpoint_dir.mkdir(parents=True, exist_ok=True)
     diffusion.train()
-    global_step = 0
+    global_step = start_global_step
 
-    print(f"Training {num_epochs} epochs on {device} | {len(loader)} batches/epoch\n")
+    print(f"Training {num_epochs} epochs on {device} | {len(loader)} batches/epoch")
+    if start_epoch > 0:
+        print(f"Resuming from epoch {start_epoch}")
+    print()
 
-    for epoch in range(num_epochs):
+    for epoch in range(start_epoch, num_epochs):
         epoch_loss = 0.0
         pbar = tqdm(loader, desc=f"epoch {epoch:>3}/{num_epochs}", leave=False)
         for x, c in pbar:

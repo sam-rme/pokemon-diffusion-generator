@@ -16,13 +16,15 @@ unet:
   time_emb_dim: 256
   class_emb_dim: 256
   num_groups: 8
+  cond_mode: cross_attn       # 'additive' (run 1/2 baseline) or 'cross_attn'
+  selective_cond: true        # encoder+bottleneck get only time, decoder gets full
 
 training:
   epochs: 800
   batch_size: 32
   lr: 2.0e-4
   ema_decay: 0.999
-  cfg_drop_prob: 0.2
+  cfg_drop_prob: 0.4
   grad_clip: 1.0
   seed: 42
   sample_every_epochs: 25

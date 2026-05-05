@@ -70,6 +70,8 @@ def main() -> None:
         class_emb_dim=cfg.unet.class_emb_dim,
         num_classes=cfg.data.num_classes,
         num_groups=cfg.unet.num_groups,
+        cond_mode=cfg.unet.get("cond_mode", "additive"),
+        selective_cond=cfg.unet.get("selective_cond", False),
     )
     schedule = make_schedule(T=cfg.diffusion.T, kind=cfg.diffusion.schedule)
     diffusion = Diffusion(

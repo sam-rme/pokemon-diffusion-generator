@@ -59,6 +59,83 @@ class ResBlock(nn.Module):
         return h + self.shortcut(x)
 
 
+class CrossAttention(nn.Module):
+    """Cross-attention from spatial positions (queries) to a small set of class tokens."""
+
+    def __init__(
+        self,
+        channels: int,
+        cond_dim: int,
+        num_heads: int = 4,
+        num_tokens: int = 4,
+    ) -> None:
+        super().__init__()
+        self.num_heads = num_heads
+        self.num_tokens = num_tokens
+        self.head_dim = channels // num_heads
+        self.token_proj = nn.Linear(cond_dim, num_tokens * channels)
+        self.to_q = nn.Conv2d(channels, channels, kernel_size=1)
+        self.to_kv = nn.Linear(channels, 2 * channels)
+        self.proj_out = nn.Conv2d(channels, channels, kernel_size=1)
+
+    def forward(self, x: Tensor, cond: Tensor) -> Tensor:
+        B, C, H, W = x.shape
+        N = H * W
+
+        tokens = self.token_proj(cond).reshape(B, self.num_tokens, C)
+        q = self.to_q(x).flatten(2).transpose(1, 2)
+        k, v = self.to_kv(tokens).chunk(2, dim=-1)
+
+        q = q.reshape(B, N, self.num_heads, self.head_dim).transpose(1, 2)
+        k = k.reshape(B, self.num_tokens, self.num_heads, self.head_dim).transpose(1, 2)
+        v = v.reshape(B, self.num_tokens, self.num_heads, self.head_dim).transpose(1, 2)
+
+        scores = q @ k.transpose(-2, -1) / (self.head_dim ** 0.5)
+        weights = scores.softmax(dim=-1)
+        out = weights @ v
+
+        out = out.transpose(1, 2).reshape(B, N, C).transpose(1, 2).reshape(B, C, H, W)
+        return self.proj_out(out)
+
+
+class CrossAttentionResBlock(nn.Module):
+    """ResBlock with additive time injection and cross-attention class injection."""
+
+    def __init__(
+        self,
+        in_channels: int,
+        out_channels: int,
+        time_emb_dim: int,
+        class_emb_dim: int,
+        num_groups: int = 8,
+        num_tokens: int = 4,
+        num_heads: int = 4,
+    ) -> None:
+        super().__init__()
+        self.norm1 = nn.GroupNorm(num_groups, in_channels)
+        self.conv1 = nn.Conv2d(in_channels, out_channels, kernel_size=3, padding=1)
+        self.time_proj = nn.Linear(time_emb_dim, out_channels)
+        self.norm2 = nn.GroupNorm(num_groups, out_channels)
+        self.conv2 = nn.Conv2d(out_channels, out_channels, kernel_size=3, padding=1)
+        self.norm_attn = nn.GroupNorm(num_groups, out_channels)
+        self.cross_attn = CrossAttention(out_channels, class_emb_dim, num_heads, num_tokens)
+        self.shortcut = (
+            nn.Conv2d(in_channels, out_channels, kernel_size=1)
+            if in_channels != out_channels
+            else nn.Identity()
+        )
+        self.out_channels = out_channels
+
+    def forward(self, x: Tensor, time_emb: Tensor, class_emb: Tensor | None = None) -> Tensor:
+        B = x.shape[0]
+        h = self.conv1(F.silu(self.norm1(x)))
+        h = h + self.time_proj(time_emb).reshape(B, self.out_channels, 1, 1)
+        h = self.conv2(F.silu(self.norm2(h)))
+        if class_emb is not None:
+            h = h + self.cross_attn(self.norm_attn(h), class_emb)
+        return h + self.shortcut(x)
+
+
 class AttentionBlock(nn.Module):
     def __init__(self, channels: int, num_groups: int = 8) -> None:
         super().__init__()

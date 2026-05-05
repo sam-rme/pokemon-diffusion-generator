@@ -20,7 +20,7 @@ unet:
   selective_cond: true        # encoder+bottleneck get only time, decoder gets full
 
 training:
-  epochs: 800
+  epochs: 1500
   batch_size: 32
   lr: 2.0e-4
   ema_decay: 0.999

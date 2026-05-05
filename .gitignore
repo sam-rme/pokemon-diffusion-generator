@@ -1,0 +1,21 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.env
+
+# Notebooks
+.ipynb_checkpoints/
+
+# Data & outputs (heavy, gitignored)
+data/
+outputs/
+checkpoints/
+wandb/
+
+# IDE
+.vscode/
+.idea/
+.DS_Store

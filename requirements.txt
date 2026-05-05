@@ -1,0 +1,30 @@
+# Minimum stack for Phase 0 + Phase 1 (diffusion model)
+# Libraries for later phases (timm, tiktoken, lpips, clean-fid, gradio)
+# will be added when needed.
+
+# --- PyTorch core (loose pins to stay Colab-compatible) ---
+torch>=2.1.0
+torchvision>=0.16.0
+
+# --- Data manipulation ---
+numpy>=1.24
+pandas>=2.0
+pillow>=10.0
+requests>=2.31
+tqdm>=4.66
+
+# --- Visualization ---
+matplotlib>=3.7
+
+# --- Configs ---
+omegaconf>=2.3
+
+# --- Notebooks ---
+jupyter
+ipykernel
+
+# --- Experiment tracking ---
+wandb>=0.16
+
+# --- Tests ---
+pytest>=7.4

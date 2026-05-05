@@ -58,6 +58,6 @@ class PokemonDataset(Dataset):
 
     def __getitem__(self, idx: int) -> tuple[torch.Tensor, int]:
         row = self.df.iloc[idx]
-        img_path = self.images_dir / f"{int(row['id']):04d}.png"
+        img_path = self.images_dir / f"{int(row['id']):05d}.png"
         img = Image.open(img_path).convert("RGBA")
         return self.transform(img), TYPE_TO_ID[row["type"]]

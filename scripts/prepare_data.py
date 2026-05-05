@@ -16,6 +16,7 @@ DATA_DIR = Path(__file__).parent.parent / "data"
 IMAGES_DIR = DATA_DIR / "images"
 METADATA_PATH = DATA_DIR / "metadata.csv"
 N_POKEMON = 1025
+FORM_ID_RANGE = range(10001, 10278)  # mega, regional, gigamax, alternate forms
 
 
 def fetch_pokemon_data(pokemon_id: int) -> Optional[dict]:
@@ -67,12 +68,14 @@ def download_sprite(url: str, out_path: Path) -> bool:
 def main():
     IMAGES_DIR.mkdir(parents=True, exist_ok=True)
 
+    all_ids = list(range(1, N_POKEMON + 1)) + list(FORM_ID_RANGE)
+
     metadata_rows: list[dict] = []
-    for pokemon_id in tqdm(range(1, N_POKEMON + 1), desc="Pokemon"):
+    for pokemon_id in tqdm(all_ids, desc="Pokemon"):
         info = fetch_pokemon_data(pokemon_id)
         if info is None or info["sprite_url"] is None:
             continue
-        out_path = IMAGES_DIR / f"{pokemon_id:04d}.png"
+        out_path = IMAGES_DIR / f"{pokemon_id:05d}.png"
         if download_sprite(info["sprite_url"], out_path):
             metadata_rows.append({
                 "id": info["id"],

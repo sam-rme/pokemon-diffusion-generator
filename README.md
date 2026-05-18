@@ -4,7 +4,7 @@ A conditional diffusion model trained from scratch in PyTorch on ~1300 Pokemon s
 
 ## Showcase
 
-![Generated samples conditioned on type](outputs/run2_test.png)
+![Generated samples conditioned on type](outputs/run2_w1.5.png)
 
 *Samples from the run 2 model (29M params, 800 epochs). Each row corresponds to a different `type1` conditioning. Sampling: DDIM, 200 steps, guidance scale 2.5.*
 
